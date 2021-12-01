@@ -113,4 +113,39 @@ void ProcessLines(std::string_view data, std::string_view delim, Callable &&cb) 
     }
 }
 
+template<typename Conv, typename ...Args>
+auto ConvertUsing(std::string_view data, std::size_t lineNo, Conv &&conv, Args ...args) {
+    std::string str(data);
+    char *end;
+    auto res = std::strtoull(str.c_str(), &end, args...);
+    if (errno) throw std::invalid_argument(fmt::format("bad value \"{}\" at line {}", data, lineNo));
+    return res;
+}
+
+template<typename T, std::size_t numsPerLine, typename vector_t = std::conditional_t<numsPerLine == 1, std::vector<T>, std::vector<std::vector<T>>>>
+requires (std::is_integral_v<T> || std::is_floating_point_v<T>)
+vector_t GetNumbersFromLines(std::string_view data, std::string_view lineDelim = "\n", std::string_view inlineDelim = " ", int intBase = 10) {
+    vector_t vec{};
+
+    auto ConvertOne = [intBase](std::string_view data, std::size_t lineNo) {
+        std::string conv(data);
+        if constexpr (std::is_integral_v<T>) {
+            if constexpr (std::is_unsigned_v<T>)
+                return static_cast<T>(ConvertUsing(data, lineNo, [](const char *s, char **e, int b) { return std::strtoull(s, e, b); }, 10));
+            else
+                return static_cast<T>(ConvertUsing(data, lineNo, [](const char *s, char **e, int b) { return std::strtoll(s, e, b); }, 10));
+        } else if constexpr (std::is_floating_point_v<T>) {
+            return static_cast<T>(ConvertUsing(data, lineNo, [](const char *s, char **e) { return std::strtof(s, e); }));
+        } else {
+            static_assert(std::is_same_v<T, T>);
+        }
+    };
+
+    ProcessLines(data, lineDelim, [ConvertOne, &vec](std::string_view line, std::size_t no) {
+        vec.push_back(ConvertOne(line, no));
+    });
+
+    return vec;
+}
+
 }
