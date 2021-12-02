@@ -50,8 +50,29 @@ Utils::ProcessNumbersFromLines<std::size_t, 2>(data, [](std::size_t v, std::stri
     fmt::print("{} * {} = {} (aim={})\n", horiz, depth, horiz * depth, aim);
 }
 
+void Refactor(std::string_view data) {
+    std::ptrdiff_t sol[2][2] = {}; //horiz, depth
+    Utils::ProcessLines(data, "\n", [&sol, aim = std::ptrdiff_t{0}](std::string_view line, std::size_t n) mutable {
+        auto it = line.find_first_of(' ');
+        auto lhs = line.substr(0, it), rhs = line.substr(it + 1);
+        auto rhsv = Utils::Convert<std::ptrdiff_t>(rhs, n);
+        if (lhs == "forward") {
+            sol[0][0] += rhsv;
+            sol[1][0] += rhsv;
+            sol[1][1] += aim * static_cast<std::ptrdiff_t>(rhsv);
+        } else if (lhs == "down") {
+            sol[0][1] += rhsv;
+            aim += rhsv;
+        } else if (lhs == "up") {
+            sol[0][1] -= rhsv;
+            aim -= rhsv;
+        } else throw std::invalid_argument(fmt::format("bad lhs at line {}: \"{}\"", n, lhs));
+    });
+    fmt::print("{}, {}", sol[0][0] * sol[0][1], sol[1][0] * sol[1][1]);
+}
+
 void Sol::Solve(std::string_view data) {
-    FirstSolution(data);
+    Refactor(data);
 }
 
 }
