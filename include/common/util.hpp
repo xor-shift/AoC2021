@@ -7,6 +7,8 @@
 
 #include <fmt/format.h>
 
+#include "converters.hpp"
+
 namespace AOC::Utils {
 
 namespace SG {
@@ -107,39 +109,24 @@ void ProcessLines(std::string_view data, std::string_view delim, Callable &&cb) 
     }
 }
 
-template<typename Conv, typename ...Args>
-auto ConvertUsing(std::string_view data, std::size_t lineNo, Conv &&conv, Args ...args) {
+template<typename T>
+auto Convert(std::string_view data, std::size_t lineNo, int intBase = 10) {
     std::string str(data);
     char *end;
-    auto res = std::strtoull(str.c_str(), &end, args...);
+    auto res = Detail::Converter<T>::Convert(str.c_str(), &end, intBase);
     if (errno) throw std::invalid_argument(fmt::format("bad value \"{}\" at line {}", data, lineNo));
     return res;
 }
 
-
 template<typename T, std::size_t numsPerLine, typename Callable>
 requires (std::is_integral_v<T> || std::is_floating_point_v<T>)
 void ProcessNumbersFromLines(std::string_view data, Callable &&cb, std::string_view lineDelim = "\n", std::string_view inlineDelim = " ", int intBase = 10) {
-    auto ConvertOne = [intBase](std::string_view data, std::size_t lineNo) {
-        std::string conv(data);
-        if constexpr (std::is_integral_v<T>) {
-            if constexpr (std::is_unsigned_v<T>)
-                return static_cast<T>(ConvertUsing(data, lineNo, [](const char *s, char **e, int b) { return std::strtoull(s, e, b); }, 10));
-            else
-                return static_cast<T>(ConvertUsing(data, lineNo, [](const char *s, char **e, int b) { return std::strtoll(s, e, b); }, 10));
-        } else if constexpr (std::is_floating_point_v<T>) {
-            return static_cast<T>(ConvertUsing(data, lineNo, [](const char *s, char **e) { return std::strtof(s, e); }));
-        } else {
-            static_assert(std::is_same_v<T, T>);
-        }
-    };
-
-    ProcessLines(data, lineDelim, [inlineDelim, ConvertOne, &cb](std::string_view line, std::size_t lineNo) {
+    ProcessLines(data, lineDelim, [inlineDelim, &cb](std::string_view line, std::size_t lineNo) {
         if constexpr (numsPerLine == 1)
-            std::invoke(cb, ConvertOne(line, lineNo), line, lineNo, std::size_t{0});
+            std::invoke(cb, Convert<T>(line, lineNo), line, lineNo, std::size_t{0});
         else {
-            ProcessLines(line, inlineDelim, [lineNo, ConvertOne, &cb](std::string_view subsect, std::size_t no) {
-                std::invoke(cb, ConvertOne(subsect, lineNo), subsect, lineNo, no);
+            ProcessLines(line, inlineDelim, [lineNo, &cb](std::string_view subsect, std::size_t no) {
+                std::invoke(cb, Convert<T>(subsect, lineNo), subsect, lineNo, no);
             });
         }
     });
