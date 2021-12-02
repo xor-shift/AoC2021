@@ -53,22 +53,20 @@ Utils::ProcessNumbersFromLines<std::size_t, 2>(data, [](std::size_t v, std::stri
 void Refactor(std::string_view data) {
     std::ptrdiff_t sol[2][2] = {}; //horiz, depth
     Utils::ProcessLines(data, "\n", [&sol, aim = std::ptrdiff_t{0}](std::string_view line, std::size_t n) mutable {
-        auto it = line.find_first_of(' ');
-        auto lhs = line.substr(0, it), rhs = line.substr(it + 1);
+        auto[lhs, rhs] = Utils::GetNLines<2>(line, ' ');
         auto rhsv = Utils::Convert<std::ptrdiff_t>(rhs, n);
-        if (lhs == "forward") {
+        if (auto c = lhs[0]; c == 'f') {
             sol[0][0] += rhsv;
-            sol[1][0] += rhsv;
-            sol[1][1] += aim * static_cast<std::ptrdiff_t>(rhsv);
-        } else if (lhs == "down") {
+            sol[1][1] += aim * rhsv;
+        } else if (c == 'd') {
             sol[0][1] += rhsv;
             aim += rhsv;
-        } else if (lhs == "up") {
+        } else if (c == 'u') {
             sol[0][1] -= rhsv;
             aim -= rhsv;
         } else throw std::invalid_argument(fmt::format("bad lhs at line {}: \"{}\"", n, lhs));
     });
-    fmt::print("{}, {}", sol[0][0] * sol[0][1], sol[1][0] * sol[1][1]);
+    fmt::print("{}, {}\n", sol[0][0] * sol[0][1], sol[0][0] * sol[1][1]);
 }
 
 void Sol::Solve(std::string_view data) {
