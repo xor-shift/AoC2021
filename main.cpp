@@ -3,9 +3,10 @@
 #include <common/solution.hpp>
 #include <solutions/2021/0/main.hpp>
 #include <solutions/2021/1/main.hpp>
+#include <solutions/2021/2/main.hpp>
 
 int main() {
-    auto today = std::make_unique<AOC::solution_t<2021, 1>>();
-    today->SolveFile("inputs/2021/1/part1.in");
+    auto today = std::make_unique<AOC::solution_t<2021, 2>>();
+    today->SolveFile("inputs/2021/2/in.in");
     return 0;
 }

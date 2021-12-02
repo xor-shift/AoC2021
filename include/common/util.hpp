@@ -51,7 +51,7 @@ constexpr auto MakeGuard(Callable &&cb) { return ScopeGuard<Condition::Any, Call
 }
 
 struct MappedStringView {
-    MappedStringView(const std::string &filename, bool rdOnly = false);
+    explicit MappedStringView(const std::string &filename, bool rdOnly = false);
 
     ~MappedStringView() noexcept;
 
@@ -61,23 +61,13 @@ struct MappedStringView {
 
     [[nodiscard]] std::size_t size() const noexcept { return mapSize; }
 
-    [[nodiscard]] constexpr std::size_t max_size() const noexcept { return std::numeric_limits<std::size_t>::max(); }
+    [[nodiscard]] explicit operator std::string_view() const noexcept { return {data(), data() + size()}; }
 
-    [[nodiscard]] char *begin() { return data(); }
-
-    [[nodiscard]] char *end() { return data() + size(); }
-
-    [[nodiscard]] const char *cbegin() const { return data(); }
-
-    [[nodiscard]] const char *cend() const { return data() + size(); }
-
-    [[nodiscard]] explicit operator std::string_view() const noexcept { return {cbegin(), cend()}; }
-
-    [[nodiscard]] explicit operator std::span<const char>() const noexcept { return {cbegin(), cend()}; }
+    [[nodiscard]] explicit operator std::span<const char>() const noexcept { return {data(), data() + size()}; }
 
     [[nodiscard]] explicit operator std::span<char>() {
         if (rdOnly) throw std::runtime_error(fmt::format("mapped file {} is read only", origFilename));
-        return {begin(), end()};
+        return {data(), data() + size()};
     }
 
   private:
@@ -111,6 +101,10 @@ void ProcessLines(std::string_view data, std::string_view delim, Callable &&cb) 
             std::invoke(cb, match, nMatches++);
         }
     }
+
+    if (start != data.end()) {
+        std::invoke(cb, std::string_view(start, data.end() - matchCount), nMatches);
+    }
 }
 
 template<typename Conv, typename ...Args>
@@ -122,11 +116,10 @@ auto ConvertUsing(std::string_view data, std::size_t lineNo, Conv &&conv, Args .
     return res;
 }
 
-template<typename T, std::size_t numsPerLine, typename vector_t = std::conditional_t<numsPerLine == 1, std::vector<T>, std::vector<std::vector<T>>>>
-requires (std::is_integral_v<T> || std::is_floating_point_v<T>)
-vector_t GetNumbersFromLines(std::string_view data, std::string_view lineDelim = "\n", std::string_view inlineDelim = " ", int intBase = 10) {
-    vector_t vec{};
 
+template<typename T, std::size_t numsPerLine, typename Callable>
+requires (std::is_integral_v<T> || std::is_floating_point_v<T>)
+void ProcessNumbersFromLines(std::string_view data, Callable &&cb, std::string_view lineDelim = "\n", std::string_view inlineDelim = " ", int intBase = 10) {
     auto ConvertOne = [intBase](std::string_view data, std::size_t lineNo) {
         std::string conv(data);
         if constexpr (std::is_integral_v<T>) {
@@ -141,10 +134,22 @@ vector_t GetNumbersFromLines(std::string_view data, std::string_view lineDelim =
         }
     };
 
-    ProcessLines(data, lineDelim, [ConvertOne, &vec](std::string_view line, std::size_t no) {
-        vec.push_back(ConvertOne(line, no));
+    ProcessLines(data, lineDelim, [inlineDelim, ConvertOne, &cb](std::string_view line, std::size_t lineNo) {
+        if constexpr (numsPerLine == 1)
+            std::invoke(cb, ConvertOne(line, lineNo), line, lineNo, std::size_t{0});
+        else {
+            ProcessLines(line, inlineDelim, [lineNo, ConvertOne, &cb](std::string_view subsect, std::size_t no) {
+                std::invoke(cb, ConvertOne(subsect, lineNo), subsect, lineNo, no);
+            });
+        }
     });
+}
 
+template<typename T, std::size_t numsPerLine, typename vector_t = std::conditional_t<numsPerLine == 1, std::vector<T>, std::vector<std::vector<T>>>>
+requires (std::is_integral_v<T> || std::is_floating_point_v<T>)
+vector_t GetNumbersFromLines(std::string_view data, std::string_view lineDelim = "\n", std::string_view inlineDelim = " ", int intBase = 10) {
+    vector_t vec{};
+    ProcessNumbersFromLines<T, numsPerLine>(data, [&vec](T v, std::string_view, std::size_t, std::size_t) { vec.push_back(v); }, lineDelim, inlineDelim, intBase);
     return vec;
 }
 
