@@ -110,7 +110,7 @@ inline void ProcessLines(std::string_view data, std::string_view delim, Callable
 }
 
 namespace Detail {
-//
+
 template<typename LHS, typename RHS>
 struct CombineTuples {};
 
