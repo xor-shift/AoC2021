@@ -1,56 +1,46 @@
 #include "main.hpp"
 
+#include <unordered_set>
+
 namespace AOC::Y2021::D4 {
 
 void FirstSolution(std::string_view data);
 
 struct BingoBoard {
-    std::array<std::pair<std::size_t, bool>, 25> impl{};
-    std::size_t winningScore = 0;
+    std::size_t boardSize;
+    std::size_t sum = 0;
+    std::unordered_map<std::size_t, std::size_t> impl{};
+    std::vector<std::size_t> rowCounter{}, colCounter{};
+
     bool passed = false;
+    std::size_t winningScore = 0;
 
-    template<typename... Ts>
-    explicit BingoBoard(Ts &&...vs) noexcept
-      :impl({(static_cast<std::size_t>(vs), ...)}) {}
+    std::size_t ToIndex(std::size_t row, std::size_t col) const noexcept { return col + row * boardSize; }
 
-    explicit BingoBoard(std::span<std::string_view> lines) {
-        if (lines.size() != 5) throw std::invalid_argument(fmt::format("bad number of lines ({}), expected 5", lines.size()));
+    std::pair<std::size_t, std::size_t> ToCoords(std::size_t index) const noexcept { return {index / boardSize, index % boardSize}; }
 
-        for (std::size_t r = 0; r < 5; r++) {
+    explicit BingoBoard(std::size_t boardSize, std::span<std::string_view> lines)
+      : boardSize(boardSize)
+        , rowCounter(boardSize, boardSize)
+        , colCounter(boardSize, boardSize) {
+        for (std::size_t r = 0; r < boardSize; r++) {
             auto row = Utils::GetNumbersFromLines<std::size_t>(lines[r], " ");
-            std::transform(row.cbegin(), row.cend(), impl.begin() + r * 5, [](std::size_t v) -> std::pair<std::size_t, bool> { return {v, false}; });
+            sum = std::accumulate(row.cbegin(), row.cend(), sum, std::plus{});
+            for (std::size_t c = 0; c < boardSize; c++) impl[row[c]] = ToIndex(r, c);
         }
     }
 
-    bool Draw(std::size_t drawn) noexcept {
+    bool Draw(std::size_t v) {
         if (passed) return true;
 
-        for (auto &v: impl) if (v.first == drawn) v.second = true;
-
-        if ((passed = Pass())) {
-            for (const auto &v: impl)
-                winningScore += v.first * !v.second;
-            winningScore *= drawn;
+        if (auto it = impl.find(v); it != impl.end()) {
+            sum -= it->first;
+            auto[r, c] = ToCoords(it->second);
+            if ((passed = !(--rowCounter[r]) || !(--colCounter[c]))) winningScore = v * sum;
+            impl.erase(it);
         }
 
         return passed;
-    }
-
-    [[nodiscard]] auto &At(std::size_t row, std::size_t col) noexcept { return impl[col + row * 5]; }
-
-    [[nodiscard]] const auto &At(std::size_t row, std::size_t col) const noexcept { return impl[col + row * 5]; }
-
-    bool Pass() {
-        for (std::size_t i = 0; i < 5; i++) {
-            bool rowPass = true;
-            bool colPass = true;
-            for (std::size_t j = 0; j < 5; j++) {
-                rowPass &= At(i, j).second;
-                colPass &= At(j, i).second;
-            }
-            if (rowPass || colPass) return true;
-        }
-        return false;
     }
 };
 
@@ -58,21 +48,24 @@ void Refactor(std::string_view data) {
     auto lines = Utils::GetLines(data, "\n");
     auto numbersToPull = Utils::GetNumbersFromLines<std::size_t>(lines[0], ",");
 
+    const auto boardSize = Utils::GetNumbersFromLines<std::size_t>(lines[1], " ").size();
+    const auto boardCount = (lines.size() - 1) / boardSize;
+
     std::vector<BingoBoard> boards;
-    for (std::size_t i = 0; i < (lines.size() - 1) / 5; i++)
-        boards.emplace_back(std::span<std::string_view>{lines.begin() + 1 + i * 5, lines.begin() + 6 + i * 5});
+    for (std::size_t i = 0; i < boardCount; i++) {
+        auto beg = lines.begin() + static_cast<long>(1 + i * boardSize);
+        boards.emplace_back(boardSize, std::span<std::string_view>{beg, beg + static_cast<long>(boardSize)});
+    }
     std::vector<std::size_t> passOrder;
 
     for (auto num: numbersToPull) {
-        for (std::size_t i = 0; auto &board: boards) {
-            ++i;
-            if (board.passed) continue;
-            if (board.Draw(num)) passOrder.push_back(i - 1);
+        for (std::size_t i = 0; i < boards.size(); i++) {
+            if (boards[i].passed) continue;
+            if (boards[i].Draw(num)) passOrder.push_back(i - 1);
         }
     }
 
-    fmt::print("part 1: {}\n", boards[passOrder.front()].winningScore);
-    fmt::print("part 2: {}\n", boards[passOrder.back()].winningScore);
+    fmt::print("{}, {}\n", boards[passOrder.front()].winningScore, boards[passOrder.back()].winningScore);
 }
 
 void Sol::Solve(std::string_view data) {
