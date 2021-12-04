@@ -88,7 +88,7 @@ extern std::vector<std::string> ReadLines(const std::string &filename);
 
 extern std::vector<std::string_view> SplitStringView(std::string_view view);
 
-template<typename Callable>
+template<typename Callable, bool ignoreEmpty = true>
 inline void ProcessLines(std::string_view data, std::string_view delim, Callable &&cb) {
     std::string_view::iterator start = data.begin();
     std::size_t matchCount = 0;
@@ -103,7 +103,8 @@ inline void ProcessLines(std::string_view data, std::string_view delim, Callable
             std::string_view match(start, it - matchCount);
             start = it + 1;
 
-            std::invoke(cb, match, nMatches++);
+            if (!match.empty() || !ignoreEmpty)
+                std::invoke(cb, match, nMatches++);
         }
     }
 
@@ -219,24 +220,22 @@ inline void ProcessNumbersFromLines(std::string_view data, Callable &&cb, std::s
     });
 }
 
-template<typename T, std::size_t numsPerLine, typename vector_t = std::conditional_t<numsPerLine == 1, std::vector<T>, std::vector<std::vector<T>>>>
+template<typename T, std::size_t numsPerLine = 1, typename vector_t = std::conditional_t<numsPerLine == 1, std::vector<T>, std::vector<std::vector<T>>>>
 requires (std::is_integral_v<T> || std::is_floating_point_v<T>)
 inline vector_t GetNumbersFromLines(std::string_view data, std::string_view lineDelim = "\n", std::string_view inlineDelim = " ", int intBase = 10) {
     vector_t vec{};
-    ProcessNumbersFromLines<T, numsPerLine>(data, [&vec](T v, std::string_view, std::size_t, std::size_t) { vec.push_back(v); }, lineDelim, inlineDelim, intBase);
+    ProcessNumbersFromLines<T, numsPerLine>(data, [&vec](T v, std::string_view, std::size_t r, std::size_t c) {
+        if constexpr (numsPerLine == 1) {
+            vec.push_back(v);
+        } else {
+            if (!c) {
+                vec.push_back({});
+            }
+
+            vec.back()->push_back(v);
+        }
+    }, lineDelim, inlineDelim, intBase);
     return vec;
-}
-
-template<std::size_t... ColumnNos>
-inline std::vector<std::array<std::string_view, sizeof...(ColumnNos)>> ExtractColumns(std::string_view data, std::string_view lineDelim, std::string_view inlineDelim) {
-    std::vector<std::array<std::string_view, sizeof...(ColumnNos)>> ret;
-    ProcessLines(data, lineDelim, [&ret, inlineDelim](std::string_view line, std::size_t) {
-        ret.push_back({});
-        auto columns = GetLines(line, inlineDelim);
-
-    });
-
-    return ret;
 }
 
 }
