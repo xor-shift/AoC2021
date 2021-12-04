@@ -5,9 +5,12 @@
 #include <string>
 #include <vector>
 
+#include <boost/multiprecision/cpp_int.hpp>
 #include <fmt/format.h>
 
 #include "converters.hpp"
+
+using boost::multiprecision::cpp_int;
 
 namespace AOC::Utils {
 
@@ -109,6 +112,12 @@ inline void ProcessLines(std::string_view data, std::string_view delim, Callable
     }
 }
 
+inline std::vector<std::string_view> GetLines(std::string_view data, std::string_view delim) {
+    std::vector<std::string_view> vec{};
+    ProcessLines(data, delim, [&vec](std::string_view v, std::size_t) { vec.push_back(v); });
+    return vec;
+}
+
 namespace Detail {
 
 template<typename LHS, typename RHS>
@@ -187,12 +196,6 @@ inline typename Detail::GetNLinesHelper<n>::tuple GetNLines(std::string_view dat
     return tuple;
 }
 
-inline std::vector<std::string_view> GetLines(std::string_view data, std::string_view delim) {
-    std::vector<std::string_view> vec{};
-    ProcessLines(data, delim, [&vec](std::string_view v, std::size_t) { vec.push_back(v); });
-    return vec;
-}
-
 template<typename T>
 inline auto Convert(std::string_view data, std::size_t lineNo, int intBase = 10) {
     std::string str(data);
@@ -222,6 +225,18 @@ inline vector_t GetNumbersFromLines(std::string_view data, std::string_view line
     vector_t vec{};
     ProcessNumbersFromLines<T, numsPerLine>(data, [&vec](T v, std::string_view, std::size_t, std::size_t) { vec.push_back(v); }, lineDelim, inlineDelim, intBase);
     return vec;
+}
+
+template<std::size_t... ColumnNos>
+inline std::vector<std::array<std::string_view, sizeof...(ColumnNos)>> ExtractColumns(std::string_view data, std::string_view lineDelim, std::string_view inlineDelim) {
+    std::vector<std::array<std::string_view, sizeof...(ColumnNos)>> ret;
+    ProcessLines(data, lineDelim, [&ret, inlineDelim](std::string_view line, std::size_t) {
+        ret.push_back({});
+        auto columns = GetLines(line, inlineDelim);
+
+    });
+
+    return ret;
 }
 
 }
