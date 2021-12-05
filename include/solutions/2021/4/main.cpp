@@ -76,7 +76,7 @@ void FirstSolution(std::string_view data) {
     auto lines = Utils::GetLines(data, "\n");
 
     std::vector<std::size_t> fr{};
-    for (auto nums = Utils::GetLines(lines[0], ","); auto i: nums) fr.push_back(Utils::Convert<std::size_t>(i, 0, 10));
+    for (auto nums = Utils::GetLines(lines[0], ","); auto i: nums) fr.push_back(Utils::Convert<std::size_t>(i));
 
     auto bingoSpan = std::span<std::string_view>(lines.begin() + 1, lines.end()); //changed from 2 to 1 because of changes to ProcessLines
 

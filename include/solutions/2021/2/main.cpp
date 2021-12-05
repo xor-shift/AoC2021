@@ -22,7 +22,7 @@ Utils::ProcessNumbersFromLines<std::size_t, 2>(data, [](std::size_t v, std::stri
         auto rhs = line.substr(it + 1);
         //auto rhsv = Utils::ConvertUsing(rhs, 0, [](const char *s, char **e, int b) { return std::strtoll(s, e, b); }, 10);
         //note: changed from the original which returned a std::size_t (due to bad writing), hence the use of std::size_t over std::ptrdiff_t
-        auto rhsv = Utils::Convert<std::size_t>(rhs, n);
+        auto rhsv = Utils::Convert<std::size_t>(rhs);
 
         std::unordered_map<std::string_view, std::size_t> asd{
           {"forward", 1,},
@@ -53,8 +53,8 @@ Utils::ProcessNumbersFromLines<std::size_t, 2>(data, [](std::size_t v, std::stri
 void Refactor(std::string_view data) {
     std::ptrdiff_t sol[2][2] = {}; //horiz, depth
     Utils::ProcessLines(data, "\n", [&sol, aim = std::ptrdiff_t{0}](std::string_view line, std::size_t n) mutable {
-        auto[lhs, rhs] = Utils::GetNLines<2>(line, ' ');
-        auto rhsv = Utils::Convert<std::ptrdiff_t>(rhs, n);
+        auto[lhs, rhs] = Utils::VecToTuple<2>(Utils::GetLines(line, ' '));
+        auto rhsv = Utils::Convert<std::ptrdiff_t>(rhs);
         if (auto c = lhs[0]; c == 'f') {
             sol[0][0] += rhsv;
             sol[1][1] += aim * rhsv;

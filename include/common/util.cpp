@@ -46,20 +46,4 @@ MappedStringView::~MappedStringView() noexcept {
     close(fildes);
 }
 
-extern std::vector<std::string> ReadLines(const std::string &filename) {
-    std::ifstream ifs(filename);
-
-    if (!ifs) throw std::runtime_error(fmt::format("file {} could not be opened", filename));
-
-    std::vector<std::string> input;
-    for (std::string current; std::getline(ifs, current);)
-        input.push_back(current);
-
-    return input;
-}
-
-std::vector<std::string_view> SplitStringView(std::string_view view) {
-    return {};
-}
-
 }

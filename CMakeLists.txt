@@ -24,7 +24,7 @@ add_executable(aoc
 target_include_directories(aoc PRIVATE
         solutions
         include)
-target_link_libraries(aoc fmt gmp)
+target_link_libraries(aoc fmt gmp tbb pthread)
 
 foreach (year 2021)
     foreach (day RANGE 0 25 1)

@@ -42,7 +42,7 @@ void Refactor(std::string_view data) {
 
     Utils::ProcessLines(data, "\n", [&part1, &part2, &window](std::string_view line, std::size_t n) {
         for (std::size_t i = windowSize; i > 0; i--) window[i] = window[i - 1];
-        window[0] = Utils::Convert<std::size_t>(line, n);
+        window[0] = Utils::Convert<std::size_t>(line);
         part1 += n && window[1] < window[0];
         part2 += (n > windowSize - 1) && (window[0] > window[windowSize]);
     });

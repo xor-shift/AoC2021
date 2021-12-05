@@ -70,7 +70,7 @@ void FirstSolution(std::string_view data) {
         remove(f, passedco, i, f[i].second < f[i].first, true);
     }
 
-    fmt::print("{}\n", Utils::Convert<unsigned>(r0, 0, 2) * Utils::Convert<unsigned>(r1, 0, 2));
+    fmt::print("{}\n", Utils::Convert<unsigned>(r0) * Utils::Convert<unsigned>(r1));
 }
 
 void Refactor(std::string_view data) {
@@ -87,7 +87,7 @@ void Refactor(std::string_view data) {
     auto Remove = [Freq](lines_t &vec, std::size_t atIndex, auto &&predicate, std::size_t &out) {
         bool wantOne = Freq(vec, atIndex, predicate);
         vec.erase(std::remove_if(vec.begin(), vec.end(), [wantOne, i = atIndex](std::string_view v) { return (v[i] == '1') != wantOne; }), vec.end());
-        if (vec.size() == 1) out = Utils::Convert<std::size_t>(vec[0], 0, 2);
+        if (vec.size() == 1) out = Utils::Convert<std::size_t>(vec[0]);
     };
 
     std::size_t part1 = 0, part2o2 = 0, part2co2 = 0;
