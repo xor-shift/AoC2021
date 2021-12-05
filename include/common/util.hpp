@@ -14,6 +14,15 @@ using boost::multiprecision::cpp_int;
 
 namespace AOC::Utils {
 
+template<typename T, typename... Ts>
+void PrintShit(T &&v, Ts &&...vs) {
+    constexpr std::size_t after = sizeof...(vs);
+    if constexpr (after == 0) fmt::print("{}\n", std::forward<T>(v));
+    else fmt::print("{}, ", std::forward<T>(v));
+
+    if constexpr(after > 0) return PrintShit(std::forward<Ts>(vs)...);
+}
+
 namespace SG {
 
 enum Condition {

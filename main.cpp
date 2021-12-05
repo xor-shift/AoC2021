@@ -1,10 +1,10 @@
 #include <memory>
 
 #include <common/solution.hpp>
-#include <solutions/2021/4/main.hpp>
+#include <solutions/2021/5/main.hpp>
 
 int main() {
-    auto today = std::make_unique<AOC::solution_t<2021, 4>>();
-    today->SolveFile("inputs/2021/4/in.in");
+    auto today = std::make_unique<AOC::solution_t<2021, 5>>();
+    today->SolveFile("inputs/2021/5/in.in");
     return 0;
 }
