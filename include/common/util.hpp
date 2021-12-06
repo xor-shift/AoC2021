@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <boost/multiprecision/cpp_int.hpp>
+#include <boost/multiprecision/gmp.hpp>
 #include <fmt/format.h>
 
 #include "converters.hpp"
