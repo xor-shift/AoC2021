@@ -78,39 +78,40 @@ void FirstSolution(std::string_view data) {
 }
 
 void Refactor(std::string_view data) {
+    using Coordinate = std::pair<i64, i64>;
+
     constexpr bool parallel = false;
     using execution_t = std::conditional_t<parallel, std::execution::parallel_unsequenced_policy, std::execution::sequenced_policy>;
     const auto execution = execution_t{};
 
     std::mutex spotsMutex{};
-    std::unordered_map<u64, std::pair<u64, u64>> occupiedSpots;
+    std::unordered_map<i64, std::unordered_map<i64, std::pair<u64, u64>>> occupiedSpots;
 
-    auto ToIndex = [](u32 x, u32 y) -> u64 { return (static_cast<u64>(y) << 32) | x; };
-
-    auto ParseLine = [ToIndex](std::string_view l) {
+    auto ParseLine = [](std::string_view l) {
         auto[start, end] = Utils::Map(Utils::Map(
           Utils::ToPair(Utils::GetLines(l, " -> ")),
           [](const auto &v) { return Utils::ToPair(Utils::GetLines(v, ',')); }
-        ), [](const auto &v) { return Utils::Convert<u32>(v); });
+        ), [](const auto &v) { return Utils::Convert<i64>(v); });
 
-        std::array<std::array<i32, 2>, 2> line{{{static_cast<int>(start.first), static_cast<int>(start.second)},
-                                                {static_cast<int>(end.first), static_cast<int>(end.second)}}};
+        std::array<std::array<i64, 2>, 2> line{{{start.first, start.second},
+                                                {end.first, end.second}}};
 
-        u64 startIdx, step, count;
+        Coordinate startIdx, step;
+        u64 count;
         bool diag;
 
         if (diag = !(line[0][0] == line[1][0] || line[0][1] == line[1][1]); !diag) {
             const bool xAxis = line[0][1] == line[1][1];
             const auto s = line[1][!xAxis] > line[0][!xAxis] ? start : end;
-            startIdx = ToIndex(s.first, s.second);
-            step = xAxis ? 1 : (1ull << 32);
+            startIdx = {s.first, s.second};
+            step = xAxis ? Coordinate{1, 0} : Coordinate{0, 1};
             count = std::abs(line[0][!xAxis] - line[1][!xAxis]);
         } else {
             count = std::abs(line[0][0] - line[1][0]);
             if (line[0][1] > line[1][1]) std::swap(line[0], line[1]); //always going downwards
             bool right = line[0][0] < line[1][0];
-            step = (1ll << 32) + (right ? 1ll : -1ll);
-            startIdx = ToIndex(line[0][0], line[0][1]);
+            step = right ? Coordinate{1, 1} : Coordinate{-1, 1};
+            startIdx = {line[0][0], line[0][1]};
         }
 
         return std::make_tuple(startIdx, step, count, diag);
@@ -118,25 +119,28 @@ void Refactor(std::string_view data) {
 
     auto lines = Utils::GetLines(data, "\n");
     std::for_each(execution, lines.cbegin(), lines.cend(), [ParseLine, &occupiedSpots, &spotsMutex](auto l) {
-        auto [startIdx, step, count, diag] = ParseLine(l);
+        auto[startIdx, step, count, diag] = ParseLine(l);
 
         for (u64 i = 0; i <= count; i++) {
             std::unique_lock<std::mutex> lock;
-            if constexpr(parallel) {
+            if constexpr (parallel) {
                 std::unique_lock temp(spotsMutex);
                 lock.swap(temp);
             }
-            auto &t = occupiedSpots[startIdx];
+            auto &t = occupiedSpots[startIdx.second][startIdx.first];
             if (!diag) ++t.first;
             ++t.second;
-            startIdx += step;
+            startIdx.first += step.first;
+            startIdx.second += step.second;
         }
     });
 
-    auto[p1, p2] = std::reduce(execution, occupiedSpots.cbegin(), occupiedSpots.cend(), std::pair<u64, u64>{0, 0}, [](auto sum, auto it) {
-        sum.first += it.second.first > 1;
-        sum.second += it.second.second > 1;
-        return sum;
+    auto[p1, p2] = std::reduce(execution, occupiedSpots.cbegin(), occupiedSpots.cend(), std::pair<u64, u64>{0, 0}, [&execution](auto sum, const auto &it) {
+        return std::reduce(execution, it.second.cbegin(), it.second.cend(), sum, [](auto sum, const auto &it) {
+            sum.first += it.second.first > 1;
+            sum.second += it.second.second > 1;
+            return sum;
+        });
     });
 
     fmt::print("{}, {}", p1, p2);
