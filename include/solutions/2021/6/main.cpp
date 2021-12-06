@@ -14,7 +14,7 @@ std::size_t Tick(std::vector<std::size_t> &fish) {
     return addNextGen;
 }
 
-void Sol::Solve(std::string_view data) {
+void FirstSolution(std::string_view data) {
     using namespace Utils;
     auto fish = GetNumbersFromLines<std::size_t>(data, ",");
 
@@ -74,7 +74,33 @@ void Sol::Solve(std::string_view data) {
     }
 
     PrintShit(std::accumulate(state.cbegin(), state.cend(), cpp_int(0)).str());
+}
 
+void Sol::Solve(std::string_view data) {
+    //refactor is literally just a refactor today, with more descriptive var names
+    const std::size_t defaultDelay = 6;
+    const std::size_t maxDelay = 8;
+    const std::size_t daysP1 = 80, daysP2 = 256;
+
+    using boost::multiprecision::cpp_int;
+    std::vector<cpp_int> fishCountPerTimer(maxDelay + 1 /* 0 is a valid timer */, cpp_int(0));
+    for (auto initial = Utils::GetNumbersFromLines<std::size_t>(data, ","); auto v: initial) ++fishCountPerTimer[v];
+
+    auto PrintResult = [&fishCountPerTimer](const std::string &str) {
+        fmt::print("{}: {}\n",
+                   str,
+                   std::accumulate(fishCountPerTimer.cbegin(), fishCountPerTimer.cend(), cpp_int(0)).str());
+    };
+
+    for (std::size_t day = 0; day < daysP2; day++) {
+        auto nowExpiring = fishCountPerTimer.front();
+        std::copy(fishCountPerTimer.begin() + 1, fishCountPerTimer.end(), fishCountPerTimer.begin());
+        fishCountPerTimer.back() = nowExpiring;
+        fishCountPerTimer[defaultDelay] += nowExpiring;
+
+        if (day == daysP1) PrintResult("part 1");
+    }
+    PrintResult("part 2");
 }
 
 }
