@@ -109,6 +109,7 @@ template<typename T, std::size_t n>
 matrix_t<T, n> MulMatPlain(const matrix_t<T, n> &lhs, const matrix_t<T, n> &rhs) {
     matrix_t<T, n> result{{{0}}};
 
+#pragma omp parallel for default(none) shared(result, lhs, rhs)
     for (std::size_t i = 0; i < n; ++i)
         for (std::size_t j = 0; j < n; ++j)
             for (std::size_t k = 0; k < n; ++k)
@@ -133,7 +134,9 @@ void ExpMat(matrix_t<T, n> &mat, std::size_t exp) {
 
 void Matrix(std::string_view data) {
     //using int_t = int;
-    using int_t = boost::multiprecision::mpz_int;
+    namespace mp = boost::multiprecision;
+    using int_t = mp::number<mp::gmp_int>;
+
     matrix_t<int_t, 9> matrix{{{0}}};
     for (std::size_t i = 0; i < 8; i++) matrix[i][i + 1] = 1;
     matrix[6][0] = 1;
