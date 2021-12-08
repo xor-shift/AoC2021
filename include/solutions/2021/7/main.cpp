@@ -2,7 +2,7 @@
 
 namespace AOC::Y2021::D7 {
 
-void Sol::Solve(std::string_view data) {
+void FirstSolution(std::string_view data) {
     using namespace Utils;
     auto nums = GetNumbersFromLines<std::ptrdiff_t>(data, ",");
 
@@ -23,7 +23,14 @@ void Sol::Solve(std::string_view data) {
     }
 
     PrintShit(asd);
-    //1397447
+}
+
+void Refactor(std::string_view data) {
+
+}
+
+void Sol::Solve(std::string_view data) {
+    FirstSolution(data);
 }
 
 }
