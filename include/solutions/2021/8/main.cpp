@@ -4,7 +4,7 @@
 
 namespace AOC::Y2021::D8 {
 
-void Sol::Solve(std::string_view data) {
+void FirstSolution(std::string_view data) {
     using boost::multiprecision::cpp_int;
     using namespace Utils;
 
@@ -219,7 +219,89 @@ void Sol::Solve(std::string_view data) {
         }
     }
     PrintShit(sum);
+}
 
+void Sol::Solve(std::string_view data) {
+    u64 part1 = 0, part2 = 0;
+
+    using segments_t = std::unordered_set<char>;
+    using map_t = std::unordered_map<char, char>;
+
+    auto PermuteMap = [](map_t map) -> map_t {
+        //std::next_permutation(map.begin(), map.end(), [](auto lhs, auto rhs) -> bool { return lhs.second < rhs.second; });
+        std::array<char, 7> conv{};
+        for (auto[lhs, rhs]: map) conv[lhs - 'a'] = rhs;
+        std::next_permutation(conv.begin(), conv.end());
+        for (std::size_t i = 0; i < conv.size(); i++) map[i + 'a'] = conv[i];
+        return map;
+    };
+
+    auto SVToSegments = [](std::string_view view) -> segments_t { return {view.cbegin(), view.cend()}; };
+
+    auto MapSegments = [](const segments_t &segments, const map_t &map) -> segments_t {
+        segments_t ret{};
+        std::transform(segments.cbegin(), segments.cend(), std::inserter(ret, ret.end()), [&map](char c) { return map.at(c); });
+        return ret;
+    };
+
+    auto SegmentsToDigit = [](const segments_t &segments) -> i32 {
+        std::array<std::pair<i32, segments_t>, 10> corresp
+          {{
+             {0, {'a', 'b', 'c', 'e', 'f', 'g'}},
+             {1, {'c', 'f'}},
+             {2, {'a', 'c', 'd', 'e', 'g'}},
+             {3, {'a', 'c', 'd', 'f', 'g'}},
+             {4, {'b', 'c', 'd', 'f'}},
+             {5, {'a', 'b', 'd', 'f', 'g'}},
+             {6, {'a', 'b', 'd', 'e', 'f', 'g'}},
+             {7, {'a', 'c', 'f'}},
+             {8, {'a', 'b', 'c', 'd', 'e', 'f', 'g'}},
+             {9, {'a', 'b', 'c', 'd', 'f', 'g'}},
+           }};
+
+        if (auto it = std::find_if(corresp.cbegin(), corresp.cend(), [&segments](auto v) { return v.second == segments; }); it != corresp.cend()) return it->first;
+        else return -1;
+    };
+
+    static const std::unordered_map<u64, i32> expected{{2, 1},
+                                                       {4, 4},
+                                                       {3, 7},
+                                                       {7, 8}};
+
+    map_t defaultMapping{};
+    for (char c = 'a'; c <= 'g'; c++) defaultMapping[c] = c;
+
+    Utils::ProcessLines(data, "\n", [&](std::string_view line, std::size_t lineNo) {
+        auto[signals, digits] = Utils::Map(
+          Utils::Map(Utils::VecToTuple<2>(Utils::GetLines(line, " | ")), [](auto sv) { return Utils::GetLines(sv, " "); }),
+          [&](auto vec) {
+              std::vector<segments_t> v;
+              std::transform(vec.cbegin(), vec.cend(), std::back_inserter(v), [&](auto sv) { return SVToSegments(sv); });
+              return v;
+          });
+
+        auto mapping = defaultMapping;
+
+        for (std::size_t i = 0; i < 5040; i++) {
+            if (std::all_of(signals.cbegin(), signals.cend(), [&](const auto &signal) -> bool {
+                    auto digit = SegmentsToDigit(MapSegments(signal, mapping));
+                    if (auto it = expected.find(signal.size()); digit == -1 || (it != expected.cend() && it->second != digit))
+                        return false;
+                    return true;
+                })) {
+
+                for (std::size_t j = 0; j < digits.size(); j++)
+                    part2 += SegmentsToDigit(MapSegments(digits[j], mapping)) * std::pow<i32>(10, digits.size() - j - 1);
+                break;
+            } else {
+                mapping = PermuteMap(mapping);
+            }
+        }
+
+        part1 += std::count_if(digits.cbegin(), digits.cend(), [&](const auto &d) { return expected.contains(d.size()); });
+    });
+
+    fmt::print("part1: {}\npart2: {}\n", part1, part2);
 }
 
 }
