@@ -13,6 +13,19 @@ void PrintShit(T &&v, Ts &&...vs) {
     if constexpr(after > 0) return PrintShit(std::forward<Ts>(vs)...);
 }
 
+void PrintIterable(auto begin, auto end, const std::string sep = ", ", bool newline = true) {
+    for (auto it = begin; it != end; ++it) fmt::print("{}{}", *it, sep);
+    if (newline) fmt::print("\n");
+}
+
+void PrintIterable2D(auto iterable, const std::string sep = ", ") {
+    for (const auto &row : iterable) {
+        for (const auto &col : row) fmt::print("{}{}", col, sep);
+        fmt::print("\n");
+    }
+    fmt::print("\n");
+}
+
 struct MappedStringView {
     explicit MappedStringView(const std::string &filename, bool rdOnly = false);
 

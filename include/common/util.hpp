@@ -14,8 +14,6 @@
 #include "scope_guard.hpp"
 #include "tuple.hpp"
 
-using boost::multiprecision::cpp_int;
-
 namespace AOC::Utils {
 
 namespace Detail {
