@@ -3,10 +3,10 @@
 namespace AOC::Y2021::D0 {
 
 void Sol::Solve(std::string_view data) {
-    using boost::multiprecision::cpp_int;
-    using namespace Utils;
+    using namespace Utils::UseThisNamespace;
 
     auto lines = GetLines(data, "\n");
+
 }
 
 }
