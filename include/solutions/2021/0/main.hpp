@@ -2,10 +2,7 @@
 
 #include <common/solution.hpp>
 
-#define TheDay 0
-#define TheNamespace namespace AOC::Y2021::D##TheDay
-
-TheNamespace {
+namespace AOC::Y2021::D0 {
 
 class Sol final : public SolutionBase {
   public:
@@ -17,7 +14,7 @@ class Sol final : public SolutionBase {
 }
 
 namespace AOC {
-SolutionFactory(2021, TheDay);
+SolutionFactory(2021, 0);
 }
 
 #undef TheDay

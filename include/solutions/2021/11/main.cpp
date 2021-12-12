@@ -56,7 +56,7 @@ void Print(const std::vector<std::vector<u64>> &v) {
     fmt::print("\n");
 }
 
-void Sol::Solve(std::string_view data) {
+void FirstSolution(std::string_view data) {
     using namespace Utils::UseThisNamespace;
 
     auto lines = GetLines(data, "\n");
@@ -80,7 +80,10 @@ void Sol::Solve(std::string_view data) {
 
         if (i == 99) PrintShit(f);
     }
+}
 
+void Sol::Solve(std::string_view data) {
+    FirstSolution(data);
 }
 
 }

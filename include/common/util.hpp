@@ -113,12 +113,14 @@ inline vector_t GetNumbersFromLines(std::string_view data, std::string_view line
     return vec;
 }
 
-
 template<typename K, typename V>
 using umap = std::unordered_map<K, V>;
 
 template<typename K>
 using uset = std::unordered_set<K>;
+
+template<typename V>
+using vec = std::vector<V>;
 
 namespace UseThisNamespace {
 using mp_int = boost::multiprecision::gmp_int;

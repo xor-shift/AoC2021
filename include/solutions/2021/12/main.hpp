@@ -2,7 +2,7 @@
 
 #include <common/solution.hpp>
 
-namespace AOC::Y2021::D11 {
+namespace AOC::Y2021::D12 {
 
 class Sol final : public SolutionBase {
   public:
@@ -14,5 +14,5 @@ class Sol final : public SolutionBase {
 }
 
 namespace AOC {
-SolutionFactory(2021, 11);
+SolutionFactory(2021, 12);
 }
