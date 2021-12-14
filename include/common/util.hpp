@@ -123,11 +123,14 @@ using uset = std::unordered_set<K>;
 template<typename V>
 using vec = std::vector<V>;
 
+template<typename V>
+using opt = std::optional<V>;
+
 using std::stack;
 using std::list;
 using std::pair;
 
-using mp_int = boost::multiprecision::gmp_int;
+using mp_int = boost::multiprecision::cpp_int;
 
 using namespace std::ranges;
 using namespace Utils;
