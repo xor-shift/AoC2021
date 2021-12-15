@@ -45,16 +45,16 @@ void Sol::Solve(std::string_view data) {
     }
     fmt::print("\n");*/
 
-    using coordinate = std::pair<u64, u64>;
-    using queue_elem = std::pair<coordinate, u64>;
+    using coordinate = std::pair<i64, i64>;
+    using queue_elem = std::pair<coordinate, i64>;
     using queue_cont = std::vector<queue_elem>;
     auto queue_compare = [](const queue_elem &lhs, const queue_elem &rhs) -> bool {
         return lhs.second > rhs.second;
     };
     std::priority_queue<queue_elem, queue_cont, decltype(queue_compare)> prio_queue{};
 
-    umap<u64, umap<u64, opt<coordinate>>> cameFrom;
-    umap<u64, umap<u64, u64>> costs;
+    umap<i64, umap<i64, opt<coordinate>>> came_from;
+    umap<i64, umap<i64, i64>> costs;
 
     prio_queue.emplace(coordinate{0, 0}, grid[0][0]);
     while (!prio_queue.empty()) {
@@ -72,22 +72,28 @@ void Sol::Solve(std::string_view data) {
                 if (xx == 0 && yy == 0) continue;
                 if (std::abs(xx) == std::abs(yy)) continue;
 
-                u64 newCost = costs[y][x] + grid[y + yy][x + xx];
+                const auto heuristic = [](coordinate from, coordinate to) {
+                    auto x_delta = std::abs(from.first - to.first);
+                    auto y_delta = std::abs(from.second - to.second);
+                    return x_delta * x_delta + y_delta * y_delta;
+                };
 
-                if (!cameFrom[y + yy][x + xx] || newCost < costs[y + yy][x + xx]) {
-                    costs[y + yy][x + xx] = newCost;
-                    cameFrom[y + yy][x + xx] = coordinate{x, y};
-                    prio_queue.emplace(coordinate{x + xx, y + yy}, grid[y + yy][x + xx]);
+                i64 cost_to = costs[y][x] + grid[y + yy][x + xx];
+
+                if (!came_from[y + yy][x + xx] || cost_to < costs[y + yy][x + xx]) {
+                    costs[y + yy][x + xx] = cost_to;
+                    came_from[y + yy][x + xx] = coordinate{x, y};
+                    prio_queue.emplace(coordinate{x + xx, y + yy}, cost_to + heuristic({x, y}, {x + xx, y + yy}));
                 }
             }
         }
     }
 
     coordinate current{grid.size() - 1, grid.size() - 1};
-    u64 sum = 0;
+    i64 sum = 0;
     do {
         sum += grid[current.second][current.first];
-        current = *cameFrom[current.second][current.first];
+        current = *came_from[current.second][current.first];
         //PrintShit(current.first, current.second);
     } while (current.first != 0 || current.second != 0);
 
