@@ -5,6 +5,6 @@
 
 int main() {
     auto today = std::make_unique<AOC::solution_t<2021, 16>>();
-    today->SolveFile("inputs/2021/16/test.in");
+    today->SolveFile("inputs/2021/16/in.in");
     return 0;
 }
