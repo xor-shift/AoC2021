@@ -23,6 +23,6 @@ using solution_t = typename SolutionFor<year, day>::solution_t;
 
 #define SolutionFactory(year, day) \
 template<>\
-struct SolutionFor<2021, day> { typedef AOC::Y##year::D##day::Sol solution_t; };
+struct SolutionFor<year, day> { typedef AOC::Y##year::D##day::Sol solution_t; };
 
 }

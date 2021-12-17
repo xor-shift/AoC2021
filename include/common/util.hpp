@@ -83,7 +83,8 @@ inline std::vector<std::string_view> GetLines(std::string_view data, char delim,
 
 template<typename T, std::size_t numsPerLine, typename Callable>
 requires (std::is_integral_v<T> || std::is_floating_point_v<T>)
-inline void ProcessNumbersFromLines(std::string_view data, Callable &&cb, std::string_view lineDelim = "\n", std::string_view inlineDelim = " ", int intBase = 10) {
+inline void ProcessNumbersFromLines(std::string_view data, Callable &&cb, std::string_view lineDelim = "\n",
+                                    std::string_view inlineDelim = " ", int intBase = 10) {
     ProcessLines(data, lineDelim, [inlineDelim, &cb](std::string_view line, std::size_t lineNo) {
         if constexpr (numsPerLine == 1)
             std::invoke(cb, Convert<T>(line), line, lineNo, std::size_t{0});
@@ -95,9 +96,12 @@ inline void ProcessNumbersFromLines(std::string_view data, Callable &&cb, std::s
     });
 }
 
-template<typename T, std::size_t numsPerLine = 1, typename vector_t = std::conditional_t<numsPerLine == 1, std::vector<T>, std::vector<std::vector<T>>>>
+template<typename T, std::size_t numsPerLine = 1, typename vector_t = std::conditional_t<
+  numsPerLine == 1, std::vector<T>, std::vector<std::vector<T>>>>
 requires (std::is_integral_v<T> || std::is_floating_point_v<T>)
-inline vector_t GetNumbersFromLines(std::string_view data, std::string_view lineDelim = "\n", std::string_view inlineDelim = " ", int intBase = 10) {
+inline vector_t
+GetNumbersFromLines(std::string_view data, std::string_view lineDelim = "\n", std::string_view inlineDelim = " ",
+                    int intBase = 10) {
     vector_t vec{};
     ProcessNumbersFromLines<T, numsPerLine>(data, [&vec](T v, std::string_view, std::size_t r, std::size_t c) {
         if constexpr (numsPerLine == 1) {
@@ -111,6 +115,40 @@ inline vector_t GetNumbersFromLines(std::string_view data, std::string_view line
         }
     }, lineDelim, inlineDelim, intBase);
     return vec;
+}
+
+template<bool use_bools = false>
+auto hex_to_binary(std::string_view hex) {
+    static const std::unordered_map<char, std::string> conv{
+      {'0', "0000"},
+      {'1', "0001"},
+      {'2', "0010"},
+      {'3', "0011"},
+      {'4', "0100"},
+      {'5', "0101"},
+      {'6', "0110"},
+      {'7', "0111"},
+      {'8', "1000"},
+      {'9', "1001"},
+      {'A', "1010"},
+      {'B', "1011"},
+      {'C', "1100"},
+      {'D', "1101"},
+      {'E', "1110"},
+      {'F', "1111"},
+    };
+
+    std::vector<std::conditional_t<use_bools, bool, uint8_t>> ret{};
+    ret.reserve(hex.size());
+    for (char c: hex) {
+        auto corresp = conv.at(c);
+
+        for (char b: corresp) {
+            ret.push_back(b == '1');
+        }
+    }
+
+    return ret;
 }
 
 namespace UseThisNamespace {

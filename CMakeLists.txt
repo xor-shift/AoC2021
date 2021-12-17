@@ -28,7 +28,7 @@ target_include_directories(aoc PRIVATE
 target_link_libraries(aoc fmt gmp tbb pthread)
 
 foreach (year 2021)
-    foreach (day RANGE 16 25 1)
+    foreach (day RANGE 17 25 1)
         set(base ${CMAKE_SOURCE_DIR}/include/solutions/${year}/${day}/main)
         if (EXISTS ${base}.hpp)
             target_sources(aoc PUBLIC ${base}.hpp ${base}.cpp)
