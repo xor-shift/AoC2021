@@ -155,11 +155,14 @@ namespace UseThisNamespace {
 template<typename K, typename V>
 using umap = std::unordered_map<K, V>;
 
-template<typename K>
-using uset = std::unordered_set<K>;
+template<typename... Args>
+using uset = std::unordered_set<Args...>;
 
 template<typename V>
 using vec = std::vector<V>;
+
+template<typename V, std::size_t n>
+using arr = std::array<V, n>;
 
 template<typename V>
 using opt = std::optional<V>;
