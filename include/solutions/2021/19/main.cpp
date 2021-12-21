@@ -4,6 +4,7 @@ namespace AOC::Y2021::D19 {
 using namespace Utils::UseThisNamespace;
 
 using Coord = arr<i64, 3>;
+using Rotation = arr<int, 3>;
 
 struct coord_hash {
     std::size_t operator()(const Coord &coord) const {
@@ -41,8 +42,15 @@ Coord apply_rotation(Coord coordinate, arr<int, 3> rotation) {
     return pairwise_op(ret, rotation, [](auto l, auto r) { return l * (r < 0 ? -1 : 1); });
 }
 
-arr<int, 3> get_rotation(int rot_id) {
-    static const vec<arr<int, 3>> rots{
+Scanner apply_rotation(const Scanner &scanner, Rotation rotation) {
+    Scanner ret;
+    for (auto &v : scanner) {
+        //v = apply_rotation(v, rotation);
+    }
+}
+
+Rotation get_rotation(int rot_id) {
+    static const vec<Rotation> rots{
       {2,  1,  -3},
       {2,  3,  1},
       {2,  -1, 3},
@@ -72,7 +80,9 @@ arr<int, 3> get_rotation(int rot_id) {
     return rots[rot_id];
 }
 
+std::optional<int> try_resolve(const Scanner &reference, Scanner &scanner) {
 
+}
 
 void Sol::Solve(std::string_view data) {
     auto lines = GetLines(data, "\n");
@@ -87,7 +97,7 @@ void Sol::Solve(std::string_view data) {
         scanners.back().insert({x, y, z});
     }
 
-    //uset<Scanner> resolved_scanners{scanners[0]};
+    uset<std::size_t> resolved_scanners{0};
 
     /*vec<vec<arr<long double, 3>>> centers;
     for (auto &scanner: scanners) {

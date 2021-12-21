@@ -151,6 +151,9 @@ auto hex_to_binary(std::string_view hex) {
     return ret;
 }
 
+template<std::size_t dim>
+using Coordinate = std::array<long long, dim>;
+
 namespace UseThisNamespace {
 template<typename K, typename V>
 using umap = std::unordered_map<K, V>;
