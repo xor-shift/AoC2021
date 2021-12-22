@@ -151,8 +151,17 @@ auto hex_to_binary(std::string_view hex) {
     return ret;
 }
 
-template<std::size_t dim>
-using Coordinate = std::array<long long, dim>;
+template<typename T, std::size_t n>
+struct ArrayHasher {
+    std::size_t operator()(const std::array<T, n> &arr) const {
+        std::string sum;
+        for (std::size_t i = 0; i < n; i++) {
+            sum += fmt::to_string(arr[i]);
+        }
+
+        return std::hash<std::string>{}(sum);
+    }
+};
 
 namespace UseThisNamespace {
 template<typename K, typename V>
