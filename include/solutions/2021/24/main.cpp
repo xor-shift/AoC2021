@@ -293,7 +293,8 @@ std::optional<i64> State::get_best_solution() const {
         if (z_i != 0) res = std::nullopt;
         else res = m_k_i;
     } else {
-        i64 best_result = -1;
+        //i64 best_result = -1;
+        i64 best_result = std::numeric_limits<i64>::max();
 
         for (i64 k = 1; k <= 9; k++) {
             State sub_state{
@@ -305,10 +306,10 @@ std::optional<i64> State::get_best_solution() const {
             const auto sub_result = sub_state.get_best_solution();
             if (!sub_result) continue;
 
-            best_result = std::max(best_result, *sub_result);
+            best_result = std::min(best_result, *sub_result);
         }
 
-        if (best_result != -1) res = m_k_i * std::pow(10, 13 - m_i) + best_result;
+        if (best_result != std::numeric_limits<i64>::max()) res = m_k_i * std::pow(10, 13 - m_i) + best_result;
     }
 
     memoization[*this] = res;
@@ -340,13 +341,11 @@ void Sol::Solve(std::string_view data) {
     fmt::print("state method: {}\n", prev_z);
 
     VM vm {
-        .m_input = {9,9,9,9,9,9,9,9,9,9,9,9,9,9},
         .m_program = program,
+        .m_input = {9,9,9,9,9,9,9,9,9,9,9,9,9,9},
     };
     while (vm.m_running) vm.tick();
-
-    //^^^ DID NOT USE
-
+    fmt::print("vm method: {}\n", vm.m_registers[3]);
 
     for (i64 k = 1; k <= 9; k++) {
         State state{
@@ -357,14 +356,13 @@ void Sol::Solve(std::string_view data) {
 
         auto res = state.get_best_solution();
         if (res) {
-            fmt::print("{}{}", k, *res);
+            fmt::print("{}", *res);
             break;
         }
     }
     //9998426997919
     //99998426997919
-    //559998426997979
-    //59998426997979
+    //19998426997975
 }
 
 }
