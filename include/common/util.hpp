@@ -163,6 +163,131 @@ struct ArrayHasher {
     }
 };
 
+namespace Detail {
+
+static inline std::size_t hash_combine(std::size_t lhs, std::size_t rhs) {
+    constexpr std::size_t k_magic_phi =
+      sizeof(std::size_t) == sizeof(uint64_t) ? 0x9e3779b97f4a7c15ull : 0x9e3779b9ul;
+    constexpr std::size_t k_magic_prime =
+      sizeof(std::size_t) == sizeof(uint64_t) ? 0x9e3779b97f4a7c55ull : 0x9e3779b1ul;
+
+    return lhs ^ rhs + k_magic_prime + (lhs << 6) + (lhs >> 2);
+}
+
+template<typename T, typename ...Ts>
+static inline std::size_t multi_hash(const T &v, const Ts &...vs) {
+    std::size_t lhs = std::hash<T>{}(v);
+
+    if constexpr (sizeof...(Ts) > 0)
+        return hash_combine(lhs, multi_hash(vs...));
+    else
+        return lhs;
+}
+
+}
+
+template<typename... Ts>
+struct TupleHasher {
+    template<std::size_t i = 0>
+    std::size_t operator()(const std::tuple<Ts...> &tuple) const {
+        const auto &lhs_elem = std::get<i>(tuple);
+
+        std::size_t lhs = std::hash<std::decay_t<decltype(lhs_elem)>>{}(lhs_elem);
+
+        if constexpr (i + 1 == sizeof...(Ts)) return lhs;
+        else return Detail::hash_combine(lhs, operator()<i + 1>(tuple));
+    }
+
+  private:
+};
+
+template<typename Ret, typename... Args>
+class MemoizationWrapper {
+    using ArgsTuple = std::tuple<Args...>;
+    using MemoPair = std::pair<ArgsTuple, Ret>;
+    using ListType = std::list<MemoPair>;
+    using NewMapType = std::unordered_map<ArgsTuple, typename ListType::iterator, TupleHasher<Args...>>;
+
+    using MapType = std::unordered_map<ArgsTuple, Ret, TupleHasher<Args...>>;
+
+  public:
+    MemoizationWrapper() noexcept = default;
+
+    MemoizationWrapper(std::size_t lru_size)
+      : m_max_saved_calls(lru_size) {}
+
+    Ret operator()(Args... args) {
+        return call(std::move(args)...);
+    }
+
+    Ret call_old(Args... args) {
+        ArgsTuple args_tuple{args...};
+
+        auto it = m_memoization.find(args_tuple);
+        if (it != m_memoization.end()) {
+            ++m_memoized_calls;
+            return it->second;
+        }
+
+        ++m_computed_calls;
+
+        Ret ret = impl(args...);
+
+        m_memoization.insert({args_tuple, ret});
+        return ret;
+    }
+
+    Ret call(Args... args) {
+        ArgsTuple args_tuple{args...};
+
+        auto it = m_new_memoization.find(args_tuple);
+        if (it != m_new_memoization.end()) {
+            ++m_memoized_calls;
+
+            auto list_it = it->second;
+            const auto res = list_it->second;
+            it->second = m_list.emplace(m_list.end(), std::move(*list_it));
+            m_list.erase(list_it);
+
+            return res;
+        }
+
+        ++m_computed_calls;
+
+        Ret ret = impl(args...);
+
+        auto list_pair = typename ListType::value_type{args_tuple, ret};
+        auto list_it = m_list.emplace(m_list.end(), std::move(list_pair));
+        m_new_memoization.insert({args_tuple, list_it});
+
+        while (m_list.size() >= m_max_saved_calls) {
+            m_new_memoization.erase(m_list.front().first);
+            m_list.pop_front();
+        }
+
+        return ret;
+    }
+
+    long double memoized_ratio() {
+        const auto successful = static_cast<long double>(m_memoized_calls);
+        const auto computed = static_cast<long double>(m_computed_calls);
+
+        return (successful) / (computed + successful);
+    }
+
+    uint64_t m_memoized_calls = 0;
+    uint64_t m_computed_calls = 0;
+
+  protected:
+    const std::size_t m_max_saved_calls = 512ull * 1024ull;
+    ListType m_list{};
+    NewMapType m_new_memoization{};
+
+    MapType m_memoization{};
+
+    virtual Ret impl(Args... args) = 0;
+};
+
 namespace UseThisNamespace {
 template<typename K, typename V>
 using umap = std::unordered_map<K, V>;

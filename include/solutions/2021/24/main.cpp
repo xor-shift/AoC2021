@@ -1,6 +1,8 @@
 #include "main.hpp"
 
 namespace AOC::Y2021::D24 {
+
+namespace FirstSolution {
 using namespace Utils::UseThisNamespace;
 
 struct Instruction {
@@ -283,10 +285,10 @@ std::optional<i64> State::get_best_solution() const {
         std::putchar('\n');
     }
 
-    static std::unordered_map <State, std::optional<i64>, StateHasher> memoization;
+    static std::unordered_map<State, std::optional<i64>, StateHasher> memoization;
     if (auto it = memoization.find(*this); it != memoization.end()) return it->second;
 
-    std::optional <i64> res = std::nullopt;
+    std::optional<i64> res = std::nullopt;
 
     if (m_i == 13) { //end of the tree
         const auto z_i = get_z_i();
@@ -316,7 +318,7 @@ std::optional<i64> State::get_best_solution() const {
     return res;
 }
 
-void Sol::Solve(std::string_view data) {
+void solve(std::string_view data) {
     auto program = parse_program(data);
     std::array<std::array<i64, 3>, 14> block_constants{};
 
@@ -331,7 +333,7 @@ void Sol::Solve(std::string_view data) {
     //sanity check
     State sanity_check_state;
     i64 prev_z = 0;
-    for (std::size_t i = 0; i < 14; i++ ){
+    for (std::size_t i = 0; i < 14; i++) {
         sanity_check_state.m_i = i;
         sanity_check_state.m_k_i = 9;
         sanity_check_state.m_z_i_1 = prev_z;
@@ -340,9 +342,9 @@ void Sol::Solve(std::string_view data) {
     }
     fmt::print("state method: {}\n", prev_z);
 
-    VM vm {
-        .m_program = program,
-        .m_input = {9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+    VM vm{
+      .m_program = program,
+      .m_input = {9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9},
     };
     while (vm.m_running) vm.tick();
     fmt::print("vm method: {}\n", vm.m_registers[3]);
@@ -363,6 +365,100 @@ void Sol::Solve(std::string_view data) {
     //9998426997919
     //99998426997919
     //19998426997975
+}
+
+}
+
+static constexpr std::size_t k_block_size = 18;
+using SingleBlockConstants = std::array<int64_t, 3>;
+using BlockConstants = std::array<SingleBlockConstants, k_block_size>;
+
+inline static BlockConstants s_block_constants{};
+
+int64_t get_z_i(int64_t i, int64_t k_i, int64_t z_i_1) {
+    const auto x = ((z_i_1 % 26) + s_block_constants[i][0]) != k_i;
+    const auto res = ((25 * x + 1) * (z_i_1 / s_block_constants[i][1])) + x * (k_i + s_block_constants[i][2]);
+
+    return res;
+}
+
+template<bool part_1>
+struct Memoizer
+  : public Utils::MemoizationWrapper<std::optional<int64_t>, int64_t, int64_t, int64_t> {
+    Memoizer() noexcept = default;
+
+    Memoizer(std::size_t lru_size)
+      : Utils::MemoizationWrapper<std::optional<int64_t>, int64_t, int64_t, int64_t>(lru_size) {}
+
+  protected:
+    std::optional<int64_t> impl(int64_t i, int64_t k_i, int64_t z_i_1) final override {
+        /*if (i < 2) {
+            for (i64 j = 0; j < i; j++) std::putchar(' ');
+            std::putchar('0' + k_i);
+            std::putchar('\n');
+        }*/
+
+        std::optional<int64_t> res{std::nullopt};
+        const int64_t initial_result_choice = part_1 ? -1 : std::numeric_limits<int64_t>::max();
+
+        const auto z_i = get_z_i(i, k_i, z_i_1);
+
+        if (i == 13) { //end of the tree
+            if (z_i != 0) res = std::nullopt;
+            else res = k_i;
+        } else {
+            int64_t best_result = initial_result_choice;
+
+            for (int64_t k = part_1 ? 9 : 1; part_1 ? (k >= 1) : (k <= 9); k = part_1 ? k - 1 : k + 1) {
+
+                const auto sub_result = (*this)(i + 1, k, z_i);
+                if (!sub_result) continue;
+
+                if constexpr (part_1)
+                    best_result = std::max(best_result, *sub_result);
+                else
+                    best_result = std::min(best_result, *sub_result);
+            }
+
+            if (best_result != initial_result_choice)
+                res =
+                  k_i * static_cast<int64_t>(std::pow(10, 13 - i)) +
+                  best_result;
+        }
+        return res;
+    }
+};
+
+template<bool part_1>
+void solve() {
+    Memoizer<part_1> memoizer{4ull * 1024 * 1024};
+
+    for (int64_t k = part_1 ? 9 : 1; part_1 ? (k >= 1) : (k <= 9); k = part_1 ? k - 1 : k + 1) {
+        auto res = memoizer(0, k, 0);
+
+        if (res) {
+            fmt::print("{}\n", *res);
+            break;
+        }
+    }
+
+    fmt::print("avoided computing {}% of the calls\n", memoizer.memoized_ratio() * 100);
+}
+
+void Sol::Solve(std::string_view data) {
+    Utils::ProcessLines(data, "\n", [](std::string_view line, std::size_t line_no) {
+        const auto block_no = line_no / k_block_size;
+        const auto in_block_line_no = line_no % k_block_size;
+
+        const auto segments = Utils::GetLines(line, " ");
+
+        if (in_block_line_no == 5) s_block_constants[block_no][0] = Utils::Convert<int64_t>(segments.back());
+        if (in_block_line_no == 4) s_block_constants[block_no][1] = Utils::Convert<int64_t>(segments.back());
+        if (in_block_line_no == 15) s_block_constants[block_no][2] = Utils::Convert<int64_t>(segments.back());
+    });
+
+    solve<true>();
+    solve<false>();
 }
 
 }
